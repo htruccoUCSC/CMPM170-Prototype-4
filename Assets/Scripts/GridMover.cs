@@ -12,7 +12,10 @@ public class GridMover : MonoBehaviour
     public float startingSpeed = 2f;
     public float rotateSpeed = 360f;
 
+
     float currentSpeed = 0f;
+    public float CurrentSpeedAbs => Mathf.Abs(currentSpeed);
+
 
     // 0 = +Z, 1 = +X, 2 = -Z, 3 = -X
     int dirIndex = 0;
