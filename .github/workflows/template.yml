@@ -50,7 +50,7 @@ jobs:
             Library-test-project-
             Library-
 
-      - uses: game-ci/unity-test-runner@v3
+      - uses: game-ci/unity-test-runner@v4
         id: testRunner
         with:
           testMode: all
