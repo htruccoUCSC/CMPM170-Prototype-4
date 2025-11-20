@@ -15,6 +15,7 @@ public class SimpleBreakableWall : MonoBehaviour
     public float explosionRadius = 5f;
     public float upwardsModifier = 0.5f;
     public float debrisLifetime = 5f;
+    public AudioClip breakSound;
     /* orb cost to destroy wall */
     public float orbcost = 0;
     /**
@@ -24,12 +25,22 @@ public class SimpleBreakableWall : MonoBehaviour
     private float NumOrbs => orbData != null ? orbData.OrbCount : 0f;
     bool hasBroken = false;
 
+    private AudioSource _breakSoundSource;
+
     void Awake()
     {
         if (orbData == null)
         {
-            orbData = FindObjectOfType<OrbData>();
+            orbData = FindAnyObjectByType<OrbData>();
         }
+    }
+
+    void Start()
+    {
+        _breakSoundSource = gameObject.AddComponent<AudioSource>();
+        _breakSoundSource.playOnAwake = false;
+        _breakSoundSource.loop = false;
+        _breakSoundSource.spatialBlend = 1f;
     }
 
     void OnTriggerEnter(Collider other)
@@ -42,7 +53,7 @@ public class SimpleBreakableWall : MonoBehaviour
             return;
             }
 
-        if (orbcost >= NumOrbs)
+        if (orbcost > NumOrbs)
         {
             Debug.Log("Not enough orbs to break this wall.");
             return;
@@ -81,6 +92,8 @@ public class SimpleBreakableWall : MonoBehaviour
         if (brokenWall != null)
             brokenWall.SetActive(true);
 
+        _breakSoundSource.PlayOneShot(breakSound);
+
         Rigidbody[] pieces = brokenWall.GetComponentsInChildren<Rigidbody>();
         foreach (Rigidbody rb in pieces)
         {
@@ -91,9 +104,8 @@ public class SimpleBreakableWall : MonoBehaviour
                 upwardsModifier,
                 ForceMode.Impulse
             );
-           
-        }
 
+        }
     }
 
     void DeductOrbs()

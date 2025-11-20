@@ -12,6 +12,16 @@ public class GridMover : MonoBehaviour
     public float startingSpeed = 2f;
     public float rotateSpeed = 360f;
 
+    [Header("Collision / Bounce")]
+    [Tooltip("Multiplier applied to speed when bouncing off an obstacle (0-1 typical)")]
+    public float bounceMultiplier = 0.5f;
+    [Tooltip("Minimum speed after a bounce (absolute)")]
+    public float bounceMinSpeed = 1f;
+    [Tooltip("Small offset to keep the player slightly away from the collision surface")]
+    public float bounceOffset = 0.05f;
+    [Tooltip("Layers considered obstacles for bouncing")]
+    public LayerMask obstacleMask = ~0;
+
 
     float currentSpeed = 0f;
     public float CurrentSpeedAbs => Mathf.Abs(currentSpeed);
@@ -113,32 +123,119 @@ public class GridMover : MonoBehaviour
         if (Mathf.Approximately(currentSpeed, 0f))
             return;
 
-        Vector3 moveDir = worldDirs[dirIndex];
-        Vector3 delta = moveDir * currentSpeed * Time.deltaTime;
+        Vector3 baseDir = worldDirs[dirIndex];
+        float speedAbs = Mathf.Abs(currentSpeed);
+        Vector3 dir = baseDir * Mathf.Sign(currentSpeed); // movement direction including sign
+
+        Vector3 delta = dir * speedAbs * Time.deltaTime;
+
+        // Raycast ahead to detect obstacles and bounce
+        float moveDist = delta.magnitude;
+        if (moveDist > 0f)
+        {
+            RaycastHit hit;
+            // include triggers so we still bounce off trigger walls if desired
+            if (Physics.Raycast(transform.position, dir, out hit, moveDist + 0.01f, obstacleMask, QueryTriggerInteraction.Collide))
+            {
+                // place player just outside the hit surface using the hit normal
+                Vector3 safePos = hit.point + hit.normal * bounceOffset;
+
+                // bounds from the grid
+                float halfWidth = grid.width * grid.cellSize * 0.5f;
+                float halfHeight = grid.height * grid.cellSize * 0.5f;
+                Vector3 origin = grid.transform.position;
+
+                // clamp inside grid
+                safePos.x = Mathf.Clamp(safePos.x, origin.x - halfWidth, origin.x + halfWidth);
+                safePos.z = Mathf.Clamp(safePos.z, origin.z - halfHeight, origin.z + halfHeight);
+
+                // snap to nearest perpendicular line
+                if (dirIndex == 0 || dirIndex == 2)
+                {
+                    // moving along Z → lock X
+                    safePos.x = SnapToGridLine(
+                        safePos.x, origin.x, halfWidth, grid.width, grid.cellSize);
+                }
+                else
+                {
+                    // moving along X → lock Z
+                    safePos.z = SnapToGridLine(
+                        safePos.z, origin.z, halfHeight, grid.height, grid.cellSize);
+                }
+
+                // If the player is still overlapping the obstacle, nudge further along the hit normal until free
+                float checkRadius = Mathf.Max(0.05f, grid.cellSize * 0.25f);
+                const int maxNudge = 5;
+                int tries = 0;
+                Collider[] overlaps;
+
+                do
+                {
+                    overlaps = Physics.OverlapSphere(safePos, checkRadius, obstacleMask, QueryTriggerInteraction.Collide);
+
+                    // filter out ourself from overlaps
+                    int count = 0;
+                    foreach (var c in overlaps)
+                    {
+                        if (c != null && c.transform != transform)
+                            count++;
+                    }
+
+                    if (count == 0)
+                        break;
+
+                    // nudge further out along normal
+                    safePos += hit.normal * (checkRadius + bounceOffset);
+                    // clamp inside grid after nudging
+                    safePos.x = Mathf.Clamp(safePos.x, origin.x - halfWidth, origin.x + halfWidth);
+                    safePos.z = Mathf.Clamp(safePos.z, origin.z - halfHeight, origin.z + halfHeight);
+
+                    if (dirIndex == 0 || dirIndex == 2)
+                    {
+                        safePos.x = SnapToGridLine(
+                            safePos.x, origin.x, halfWidth, grid.width, grid.cellSize);
+                    }
+                    else
+                    {
+                        safePos.z = SnapToGridLine(
+                            safePos.z, origin.z, halfHeight, grid.height, grid.cellSize);
+                    }
+
+                    tries++;
+                } while (tries < maxNudge);
+
+                transform.position = safePos;
+
+                // reverse speed (bounce). Keep it at least bounceMinSpeed in magnitude and flip sign.
+                currentSpeed = -Mathf.Sign(currentSpeed) * Mathf.Max(bounceMinSpeed, speedAbs * bounceMultiplier);
+
+                return; // skip normal movement since we already placed the player
+            }
+        }
 
         Vector3 newPos = transform.position + delta;
 
         // bounds from the grid
-        float halfWidth = grid.width * grid.cellSize * 0.5f;
-        float halfHeight = grid.height * grid.cellSize * 0.5f;
-        Vector3 origin = grid.transform.position;
+        float halfWidth2 = grid.width * grid.cellSize * 0.5f;
+        float halfHeight2 = grid.height * grid.cellSize * 0.5f;
+        Vector3 origin2 = grid.transform.position;
 
         // clamp inside grid
-        newPos.x = Mathf.Clamp(newPos.x, origin.x - halfWidth, origin.x + halfWidth);
-        newPos.z = Mathf.Clamp(newPos.z, origin.z - halfHeight, origin.z + halfHeight);
+        newPos.x = Mathf.Clamp(newPos.x, origin2.x - halfWidth2, origin2.x + halfWidth2);
+        newPos.z = Mathf.Clamp(newPos.z, origin2.z - halfHeight2, origin2.z + halfHeight2);
 
         // snap to nearest perpendicular line
         if (dirIndex == 0 || dirIndex == 2)
         {
             // moving along Z → lock X
             newPos.x = SnapToGridLine(
-                newPos.x, origin.x, halfWidth, grid.width, grid.cellSize);
+                newPos.x, origin2.x, halfWidth2, grid.width, grid.cellSize);
         }
         else
         {
             // moving along X → lock Z
             newPos.z = SnapToGridLine(
-                newPos.z, origin.z, halfHeight, grid.height, grid.cellSize);
+                newPos.z, origin2.z, halfHeight2, grid.height, grid.cellSize);
         }
 
         transform.position = newPos;
