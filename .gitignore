@@ -37,7 +37,6 @@
 .vscode/*
 .DS_Store
 .DS_Store?
-.github
 
 # Gradle cache directory
 .gradle/
