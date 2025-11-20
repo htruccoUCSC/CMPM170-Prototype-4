@@ -2,25 +2,38 @@ using UnityEngine;
 
 public class SimpleBreakableWall : MonoBehaviour
 {
-   // wall objects
+    [SerializeField] private OrbData orbData;
+   /* wall objects */
     public GameObject intactWall;
     public GameObject brokenWall;
 
 
-    /* explosion vars (assumes a max player speed of '50'),
-     then smooths the explosion based off this max */
+    /* explosion vars */
     public float maxRecordedSpeed = 2f;
     public float minExplosionForce = 0.2f;
     public float maxExplosionForce = 2f;
     public float explosionRadius = 5f;
     public float upwardsModifier = 0.5f;
     public float debrisLifetime = 5f;
-
+    /* orb cost to destroy wall */
+    public float orbcost = 0;
+    /**
+        references OrbData to get number of orbs collected. 
+        If higher than or equal to orbcost of wall, player can break
+     **/
+    private float NumOrbs => orbData != null ? orbData.OrbCount : 0f;
     bool hasBroken = false;
 
-    private void OnTriggerEnter(Collider other)
+    void Awake()
     {
+        if (orbData == null)
+        {
+            orbData = FindObjectOfType<OrbData>();
+        }
+    }
 
+    void OnTriggerEnter(Collider other)
+    {
         if (hasBroken) {
             return;
              }
@@ -28,6 +41,12 @@ public class SimpleBreakableWall : MonoBehaviour
             {
             return;
             }
+
+        if (orbcost >= NumOrbs)
+        {
+            Debug.Log("Not enough orbs to break this wall.");
+            return;
+        }
 
         GridMover mover = other.GetComponent<GridMover>();
         float speed = 0f;
@@ -47,6 +66,7 @@ public class SimpleBreakableWall : MonoBehaviour
 
         Vector3 explosionPoint = other.transform.position;
 
+        DeductOrbs();
         Break(explosionForce, explosionPoint);
     }
 
@@ -71,6 +91,19 @@ public class SimpleBreakableWall : MonoBehaviour
                 upwardsModifier,
                 ForceMode.Impulse
             );
+           
         }
+
+    }
+
+    void DeductOrbs()
+    {
+        if (orbData == null)
+        {
+            return;
+        }
+
+        int cost = Mathf.RoundToInt(orbcost);
+        orbData.OrbCount = Mathf.Max(0, orbData.OrbCount - cost);
     }
 }
