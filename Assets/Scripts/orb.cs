@@ -6,7 +6,7 @@ public class Orb : MonoBehaviour
 
     public float magnetstrength = 2f;
     public float radius = 20f;
-    public float rotationSpeed = 50f;
+    public float rotationSpeed = 100f;
     public float bobSpeed = 2f;
     public float bobHeight = 0.25f;
     public GameObject player;
@@ -35,7 +35,7 @@ public class Orb : MonoBehaviour
 
         /* subtle animation for orbs */
         transform.position = new Vector3(transform.position.x, newY, transform.position.z);
-        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f);
+        transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
 
     }
 
