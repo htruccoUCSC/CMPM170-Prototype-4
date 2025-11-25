@@ -1,5 +1,10 @@
 name: GameCI Template
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 on: [push, pull_request]
 
 jobs:
