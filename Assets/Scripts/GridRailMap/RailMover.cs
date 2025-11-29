@@ -27,6 +27,8 @@ public class RailMover : MonoBehaviour
     public float boostedMaxSpeed = 14f;   
     public float rampExtraAcceleration = 15f;
 
+    public OrbData orbData;
+    public int minRampCost = 1;
 
     [Header("Slowdown")]
     public float slowdownDuration = 0.8f;
@@ -37,7 +39,6 @@ public class RailMover : MonoBehaviour
 
     bool slowdownActive = false;
     float slowdownTimer = 0f;
-
 
     [Header("Camera & FX")]
     public Camera playerCamera;
@@ -262,8 +263,6 @@ public class RailMover : MonoBehaviour
         }
     }
 
-
-
     void CompleteStep()
     {
         // We've finished moving from currentNode -> targetNode
@@ -359,8 +358,7 @@ public class RailMover : MonoBehaviour
             }
         }
 
-        // Player can only ramp if not currently in slowdown
-        if (!slowdownActive && Input.GetKey(rampKey))
+        if (!slowdownActive && Input.GetKey(rampKey) && orbData.OrbCount >= minRampCost)
         {
             isRamping = true;
         }
@@ -369,7 +367,6 @@ public class RailMover : MonoBehaviour
             isRamping = false;
         }
     }
-
 
     void UpdateCameraEffects()
     {
@@ -383,7 +380,6 @@ public class RailMover : MonoBehaviour
         }
         else if (isRamping)
         {
-            // widen FOV based on how fast we’re going vs boosted top speed
             float t = Mathf.InverseLerp(minSpeed, boostedMaxSpeed, currentSpeed);
             targetFOV = Mathf.Lerp(baseFOV, baseFOV + rampFOVGain, t);
         }

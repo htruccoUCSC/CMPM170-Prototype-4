@@ -2,7 +2,21 @@ using UnityEngine;
 
 /** Public class for storing and accessing OrbCount (the number of orbs the player has collected).
  Everytime player collides with a wall, OrbCost is deducted from OrbCount **/
+
 public class OrbData : MonoBehaviour
 {
-    public int OrbCount = 0;
+    //* maxes out at 5 orbs *//
+    public int OrbCount = 5;
+    public int MaxOrbs = 5;
+
+    public void AddOrb(int amount = 1)
+    {
+        OrbCount = Mathf.Clamp(OrbCount + amount, 0, MaxOrbs);
+    }
+
+    
+    public void RemoveOrb(int amount = 1)
+    {
+        OrbCount = Mathf.Clamp(OrbCount - amount, 0, MaxOrbs);
+    }
 }

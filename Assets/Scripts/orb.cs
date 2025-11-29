@@ -23,7 +23,6 @@ public class Orb : MonoBehaviour
         float DistFromPlayer = Vector3.Distance(transform.position, player.transform.position);
         float newY = startPos.y + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
 
-        
         if (DistFromPlayer < radius)
         {
             transform.position = Vector3.MoveTowards(
@@ -36,14 +35,14 @@ public class Orb : MonoBehaviour
         /* subtle animation for orbs */
         transform.position = new Vector3(transform.position.x, newY, transform.position.z);
         transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
-
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject == player)
+        if (collision.gameObject == player && orbData != null)
         {
-            orbData.OrbCount++;
+            // use the AddOrb function instead of touching OrbCount directly
+            orbData.AddOrb(1);
             Debug.Log("Orbs: " + orbData.OrbCount);
             Destroy(gameObject);
         }
