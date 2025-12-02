@@ -31193,6 +31193,10 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7095634626784205276, guid: 5f322d1df2757a145a65178163778cee, type: 3}
+      propertyPath: bounceForce
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7095634626784205276, guid: 5f322d1df2757a145a65178163778cee, type: 3}
       propertyPath: requiredSpeed
       value: 21
       objectReference: {fileID: 0}

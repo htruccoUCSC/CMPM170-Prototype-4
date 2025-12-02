@@ -402,4 +402,35 @@ public class RailMover : MonoBehaviour
         isRamping = false; // cancel ramp if they were charging
     }
 
+    public void TriggerBounce(float duration, float speedMultiplier = 1.5f)
+    {
+        // Stop current step immediately to prevent sliding through wall
+        if (isStepping)
+        {
+            // Cancel the current step and snap to current node
+            isStepping = false;
+            stepT = 0f;
+            transform.position = map.NodeToWorld(currentNode);
+        }
+        
+        // Reverse direction
+        facingDir = -facingDir;
+        
+        // Boost speed in reverse direction for dramatic bounce-back
+        currentSpeed = Mathf.Max(currentSpeed * speedMultiplier, maxSpeed);
+        
+        // Clamp to a reasonable maximum
+        if (currentSpeed > boostedMaxSpeed)
+            currentSpeed = boostedMaxSpeed;
+        
+        // Clear any pending turn
+        pendingTurn = 0;
+        
+        // Immediately start stepping backwards if there's a rail
+        if (map.HasEdge(currentNode, facingDir))
+        {
+            TryStartStep();
+        }
+    }
+
 }

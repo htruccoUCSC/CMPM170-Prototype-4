@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class SimpleBreakableWall : MonoBehaviour
 {
@@ -18,7 +19,12 @@ public class SimpleBreakableWall : MonoBehaviour
     public AudioClip breakSound;
     /* orb cost to destroy wall */
     public float orbcost = 0;
-    public float requiredSpeed = 6f;     
+    public float requiredSpeed = 6f;
+    
+    [Header("Bounce Settings")]
+    public float bounceForce = 10f;
+    public AudioClip bounceSound;
+    
     [Header("Slowdown After Break")]
     public float slowdownDuration = 0.8f;
 
@@ -33,8 +39,14 @@ public class SimpleBreakableWall : MonoBehaviour
      **/
     private float NumOrbs => orbData != null ? orbData.OrbCount : 0f;
     bool hasBroken = false;
+    
+    // Bounce cooldown to prevent repeated triggering
+    private float lastBounceTime = -999f;
+    private float bounceCooldown = 0.5f;
+    private GameObject lastBouncedPlayer = null;
 
     private AudioSource _breakSoundSource;
+    private Collider wallCollider;
 
     void Awake()
     {
@@ -42,6 +54,9 @@ public class SimpleBreakableWall : MonoBehaviour
         {
             orbData = FindAnyObjectByType<OrbData>();
         }
+        
+        // Cache the collider
+        wallCollider = GetComponent<Collider>();
     }
 
     void Start()
@@ -59,31 +74,65 @@ public class SimpleBreakableWall : MonoBehaviour
 
         if (!other.CompareTag("Player"))
             return;
-
-        if (orbcost > NumOrbs)
+        
+        // Prevent repeated bounces - cooldown check
+        if (Time.time - lastBounceTime < bounceCooldown && lastBouncedPlayer == other.gameObject)
         {
-            Debug.Log("Not enough orbs to break this wall.");
             return;
         }
 
         float speed = 0f;
         RailMover railMover = other.GetComponent<RailMover>();
 
+        if (orbcost > NumOrbs)
+        {
+            Debug.Log($"Not enough orbs to break this wall. Bouncing back! (Orbs: {NumOrbs}, Required: {orbcost})");
+            
+            // Set cooldown to prevent repeated triggers
+            lastBounceTime = Time.time;
+            lastBouncedPlayer = other.gameObject;
+            
+            // Trigger bounce: reverses direction and boosts speed for dramatic bounce-back
+            railMover.TriggerBounce(bounceForce * 0.1f, 2.0f);
+            
+            // Temporarily disable trigger to prevent immediate re-trigger
+            StartCoroutine(DisableTriggerTemporarily(0.3f));
+            
+            // Play bounce sound if available
+            if (bounceSound != null)
+            {
+                _breakSoundSource.PlayOneShot(bounceSound);
+            }
+            
+            return;
+        }
+
+        // Get speed from RailMover
         if (railMover != null)
         {
             speed = railMover.CurrentSpeedAbs;
         }
-        else
-        {
-            GridMover oldMover = other.GetComponent<GridMover>();
-            if (oldMover != null)
-            {
-                speed = oldMover.CurrentSpeedAbs;
-            }
-        }
 
         if (speed < requiredSpeed)
         {
+            Debug.Log($"Speed too low to break wall. Bouncing back! (Speed: {speed}, Required: {requiredSpeed})");
+            
+            // Set cooldown to prevent repeated triggers
+            lastBounceTime = Time.time;
+            lastBouncedPlayer = other.gameObject;
+            
+            // Trigger bounce: reverses direction and boosts speed for dramatic bounce-back
+            railMover.TriggerBounce(bounceForce * 0.1f, 2.0f);
+            
+            // Temporarily disable trigger to prevent immediate re-trigger
+            StartCoroutine(DisableTriggerTemporarily(0.3f));
+            
+            // Play bounce sound if available
+            if (bounceSound != null)
+            {
+                _breakSoundSource.PlayOneShot(bounceSound);
+            }
+            
             return;
         }
 
@@ -147,5 +196,15 @@ public class SimpleBreakableWall : MonoBehaviour
 
         int cost = Mathf.RoundToInt(orbcost);
         orbData.OrbCount = Mathf.Max(0, orbData.OrbCount - cost);
+    }
+    
+    IEnumerator DisableTriggerTemporarily(float duration)
+    {
+        if (wallCollider != null)
+        {
+            wallCollider.enabled = false;
+            yield return new WaitForSeconds(duration);
+            wallCollider.enabled = true;
+        }
     }
 }
