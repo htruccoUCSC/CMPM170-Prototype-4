@@ -244,6 +244,8 @@ public class RailMover : MonoBehaviour
                                         : acceleration;
 
         currentSpeed = Mathf.MoveTowards(currentSpeed, targetMaxSpeed, accel * Time.deltaTime);
+        var anim = GetComponentInChildren<Animator>();
+        anim.SetFloat("Walk", currentSpeed / maxSpeed);
 
         if (currentSpeed < minSpeed)
             currentSpeed = minSpeed;
