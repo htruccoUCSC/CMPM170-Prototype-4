@@ -16954,13 +16954,13 @@ MonoBehaviour:
     openSouth: 1
     openWest: 1
   - openNorth: 0
-    openEast: 1
+    openEast: 0
     openSouth: 1
     openWest: 1
   - openNorth: 0
     openEast: 1
     openSouth: 1
-    openWest: 1
+    openWest: 0
   - openNorth: 0
     openEast: 1
     openSouth: 0
