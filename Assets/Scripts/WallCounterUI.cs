@@ -1,14 +1,13 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class WallCounterUI : MonoBehaviour
 {
-    private static WallCounterUI instance;
+    private static bool hasSpawned;
 
     [SerializeField] private TextMeshProUGUI counterText;
-    private Canvas rootCanvas;
 
     private int totalWalls;
     private int brokenWalls;
@@ -16,46 +15,68 @@ public class WallCounterUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void CreateCounter()
     {
-        if (instance != null || FindObjectOfType<WallCounterUI>() != null)
+        if (hasSpawned || FindObjectOfType<WallCounterUI>() != null)
         {
             return;
         }
 
         var go = new GameObject("WallCounter");
-        instance = go.AddComponent<WallCounterUI>();
-        DontDestroyOnLoad(go);
+        go.AddComponent<WallCounterUI>();
+        hasSpawned = true;
     }
 
     private void Awake()
     {
-        if (instance != null && instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject); //makes sure ui stays when game reloaded after death
         EnsureUI();
     }
 
     private void OnEnable()
     {
         SimpleBreakableWall.WallBroken += HandleWallBroken;
-        SceneManager.sceneLoaded += HandleSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "LoseScreen") //hide the counter during death screen
+        {
+            // Hide UI entirely
+            SetUIVisible(false);
+            return;
+        }
+
+        // Show UI for gameplay
+        SetUIVisible(true);
+
+        brokenWalls = 0;
+        CountExistingWalls();
+        UpdateCounter();
+    }
+
+    private void SetUIVisible(bool visible)
+{
+    if (counterText != null)
+    {
+        counterText.gameObject.SetActive(visible);
+    }
+
+    if (counterText != null && counterText.transform.parent != null)
+    {
+        counterText.transform.parent.gameObject.SetActive(visible);
+    }
+}
 
     private void Start()
     {
         CountExistingWalls();
         UpdateCounter();
-        ApplyVisibilityForScene();
     }
 
     private void OnDisable()
     {
         SimpleBreakableWall.WallBroken -= HandleWallBroken;
-        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     private void EnsureUI()
@@ -67,10 +88,11 @@ public class WallCounterUI : MonoBehaviour
 
         // Create a lightweight overlay canvas and text element if none are assigned.
         var canvasGO = new GameObject("WallCounterCanvas");
-        rootCanvas = canvasGO.AddComponent<Canvas>();
-        rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        DontDestroyOnLoad(canvasGO);
+        var canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-        var scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+        var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
@@ -110,14 +132,6 @@ public class WallCounterUI : MonoBehaviour
     {
         brokenWalls++;
         UpdateCounter();
-        ApplyVisibilityForScene();
-    }
-
-    private void HandleSceneLoaded(Scene _, LoadSceneMode __)
-    {
-        CountExistingWalls();
-        UpdateCounter();
-        ApplyVisibilityForScene();
     }
 
     private void UpdateCounter()
@@ -128,18 +142,5 @@ public class WallCounterUI : MonoBehaviour
         }
 
         counterText.text = $"Walls Broken: {brokenWalls}/{totalWalls}";
-    }
-
-    private void ApplyVisibilityForScene()
-    {
-        if (rootCanvas == null)
-        {
-            rootCanvas = GetComponentInChildren<Canvas>();
-        }
-
-        if (rootCanvas != null)
-        {
-            rootCanvas.gameObject.SetActive(totalWalls > 0);
-        }
     }
 }
