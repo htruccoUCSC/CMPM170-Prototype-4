@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TrackMovementTest.unity
     guid: e0f608573cde63f4f925a345e881848b
+  - enabled: 1
+    path: Assets/Scenes/LoseScreen.unity
+    guid: cd7229c7d63a4104499e7055da970c82
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

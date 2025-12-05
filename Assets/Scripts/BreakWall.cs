@@ -4,6 +4,14 @@ using System.Collections;
 public class SimpleBreakableWall : MonoBehaviour
 {
     [SerializeField] private OrbData orbData;
+    [SerializeField] private LossData LossData;
+
+    public Camera maincamera;
+
+    private float shake = 0f;
+    public float shakeAmount = 0.7f;
+    private float shakedecreasefactor = 1.0f;
+    private Vector3 originalCameraPos;
 
     /* wall objects */
     public GameObject intactWall;
@@ -61,6 +69,26 @@ public class SimpleBreakableWall : MonoBehaviour
         wallCollider = GetComponent<Collider>();
     }
 
+    void Shake() {
+        /* play sound for collision */
+        if (maincamera == null)
+            maincamera = Camera.main;
+        if (maincamera != null)
+            originalCameraPos = maincamera.transform.localPosition;
+        shake = shakeAmount;
+    }
+
+    void Update() {
+        if(shake > 0.0f && maincamera != null) {
+            maincamera.transform.localPosition = originalCameraPos + Random.insideUnitSphere * shake;
+            shake -= Time.deltaTime * shakedecreasefactor;
+            if (shake <= 0f) {
+                maincamera.transform.localPosition = originalCameraPos;
+                shake = 0f;
+            }
+        }
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (hasBroken)
@@ -76,11 +104,18 @@ public class SimpleBreakableWall : MonoBehaviour
         }
 
         float speed = 0f;
+        // Find the RailMover on the collided object or its parents (handles child colliders)
         RailMover railMover = other.GetComponent<RailMover>();
+        if (railMover == null)
+            railMover = other.GetComponentInParent<RailMover>();
 
         // Not enough orbs → bounce
         if (orbcost > NumOrbs)
         {
+            // deduct a life
+            Shake();
+            if (LossData != null) { LossData.lives -= 1; LossData.CheckLoss(); }
+
             Debug.Log($"Not enough orbs to break this wall. Bouncing back! (Orbs: {NumOrbs}, Required: {orbcost})");
             
             // Set cooldown to prevent repeated triggers
@@ -114,6 +149,10 @@ public class SimpleBreakableWall : MonoBehaviour
         // Too slow → bounce
         if (speed < requiredSpeed)
         {
+            // deduct a life
+            Shake();
+            if (LossData != null) { LossData.lives -= 1; LossData.CheckLoss(); }
+
             Debug.Log($"Speed too low to break wall. Bouncing back! (Speed: {speed}, Required: {requiredSpeed})");
             
             // Set cooldown to prevent repeated triggers
