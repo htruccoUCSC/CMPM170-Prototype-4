@@ -15,7 +15,7 @@ public class WallCounterUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void CreateCounter()
     {
-        if (hasSpawned || FindObjectOfType<WallCounterUI>() != null)
+        if (hasSpawned || FindFirstObjectByType<WallCounterUI>() != null)
         {
             return;
         }
@@ -115,7 +115,7 @@ public class WallCounterUI : MonoBehaviour
 
     private void CountExistingWalls()
     {
-        SimpleBreakableWall[] walls = FindObjectsOfType<SimpleBreakableWall>();
+        SimpleBreakableWall[] walls = FindObjectsByType<SimpleBreakableWall>(FindObjectsSortMode.None);
         totalWalls = walls.Length;
         brokenWalls = 0;
 
